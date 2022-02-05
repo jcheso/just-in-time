@@ -6,7 +6,7 @@ router.get("/ping", async (req, res) => {
   return res.sendStatus(200);
 });
 
-router.get("/call", async (req, res) => {
+router.post("/call", async (req, res) => {
   const axios = require("axios");
   TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
   TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -16,14 +16,18 @@ router.get("/call", async (req, res) => {
   // Parse the request body for params
 
   const params = { key: GOOGLE_API_KEY };
-  const directions = await axios.get(
-    "https://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal",
-    { params }
-  );
+  let directions = {};
+  try {
+    directions = await axios.get(
+      "https://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal",
+      { params }
+    );
+  } catch (error) {
+    console.log(error);
+  }
 
   timeToDestination = directions.data.routes[0].legs[0].duration.value;
-  // console.log(console.log(JSON.stringify(directions.data)));
-
+  console.log(timeToDestination);
   // Logic for calling
 
   // ! TWILIO CALL
