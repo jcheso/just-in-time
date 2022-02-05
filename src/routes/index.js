@@ -81,9 +81,10 @@ router.post("/call", async (req, res) => {
       console.log("MESSAGE MESSAGE BABY");
       client.messages
         .create({
-          body: "Your friend has arrived at their destination!",
           from: `${TWILIO_NUMBER}`,
+          body: "Your friend has arrived at their destination!",
           to: safetyPhoneNumber,
+          messagingServiceSid: "MG61ffe7bda5574fa4bf36ddc2614e6501",
         })
         .then((message) => console.log(message.sid));
     }
