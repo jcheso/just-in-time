@@ -16,18 +16,20 @@ router.post("/call", async (req, res) => {
   // Parse the request body for params
 
   const params = { key: GOOGLE_API_KEY };
-  let directions = {};
+  let response = {};
   try {
-    directions = await axios.get(
+    console.log(params.key);
+    response = await axios.get(
       "https://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal",
       { params }
     );
-    timeToDestination = directions.data.routes[0].legs[0].duration.value;
-    console.log(timeToDestination);
+    console.log(response);
+    timeToDestination = response.data.routes[0].legs[0].duration.value;
   } catch (error) {
     console.log(error);
   }
 
+  console.log(timeToDestination);
   // Logic for calling
 
   // ! TWILIO CALL
@@ -40,8 +42,7 @@ router.post("/call", async (req, res) => {
   //     from: `${TWILIO_NUMBER}`,
   //   })
   //   .then((call) => console.log(call.sid));
-
-  return res.sendStatus(200);
+  return res.send(timeToDestination.toString());
 });
 
 module.exports = router;
