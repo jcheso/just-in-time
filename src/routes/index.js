@@ -72,7 +72,7 @@ router.post("/call", async (req, res) => {
           twiml: "<Response><Say>Ahoy there!</Say></Response>",
           to: num,
           from: `${TWILIO_NUMBER}`,
-          statusCallback: `https:///https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
+          statusCallback: `https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
           statusCallbackEvent: ["no-answer"],
           statusCallbackMethod: "POST",
         })
@@ -109,7 +109,7 @@ router.post("/no-answer", async (req, res) => {
           twiml: "<Response><Say>Ahoy there!</Say></Response>",
           to: "+447801824101",
           from: `${TWILIO_NUMBER}`,
-          statusCallback: `https:///https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
+          statusCallback: `https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
           statusCallbackEvent: ["no-answer"],
           statusCallbackMethod: "POST",
         })
