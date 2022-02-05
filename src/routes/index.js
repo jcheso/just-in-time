@@ -22,12 +22,12 @@ router.post("/call", async (req, res) => {
       "https://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal",
       { params }
     );
+    timeToDestination = directions.data.routes[0].legs[0].duration.value;
+    console.log(timeToDestination);
   } catch (error) {
     console.log(error);
   }
 
-  timeToDestination = directions.data.routes[0].legs[0].duration.value;
-  console.log(timeToDestination);
   // Logic for calling
 
   // ! TWILIO CALL
