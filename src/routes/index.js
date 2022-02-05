@@ -83,7 +83,7 @@ router.post("/call", async (req, res) => {
         .create({
           body: "Your friend has arrived at their destination!",
           from: `${TWILIO_NUMBER}`,
-          to: `${safetyPhoneNumber}`,
+          to: safetyPhoneNumber,
         })
         .then((message) => console.log(message.sid));
     }
