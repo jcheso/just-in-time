@@ -20,8 +20,8 @@ router.get("/call", async (req, res) => {
     "https://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal",
     { params }
   );
-
-  console.log(directions.data.routes.legs);
+  console.log(directions.data.routes[0].legs[0].duration.value);
+  // console.log(console.log(JSON.stringify(directions.data)));
 
   // ! TWILIO CALL
   // const client = require("twilio")(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
