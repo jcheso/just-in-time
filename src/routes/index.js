@@ -73,10 +73,19 @@ router.post("/call", async (req, res) => {
           to: num,
           from: `${TWILIO_NUMBER}`,
           statusCallback: `https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
-          statusCallbackEvent: ["no-answer"],
+          statusCallbackEvent: ["completed"],
           statusCallbackMethod: "POST",
         })
         .then((call) => console.log(call.status));
+
+      console.log("MESSAGE MESSAGE BABY");
+      client.messages
+        .create({
+          body: "Your friend has arrived at their destination!",
+          from: `${TWILIO_NUMBER}`,
+          to: `${safetyPhoneNumber}`,
+        })
+        .then((message) => console.log(message.sid));
     }
     statusCode = 200;
   } catch (error) {
@@ -93,7 +102,7 @@ router.post("/no-answer", async (req, res) => {
   const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
   const query = url.parse(req.url, true).query;
-  const count = query.count + 1;
+  const count = parseInt(query.count) + 1;
   const num = query.number;
 
   console.log("NO ANSWER");
@@ -110,7 +119,7 @@ router.post("/no-answer", async (req, res) => {
           to: "+447801824101",
           from: `${TWILIO_NUMBER}`,
           statusCallback: `https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
-          statusCallbackEvent: ["no-answer"],
+          statusCallbackEvent: ["completed"],
           statusCallbackMethod: "POST",
         })
         .then((call) => console.log(call.status));
