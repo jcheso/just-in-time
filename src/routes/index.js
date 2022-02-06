@@ -1,5 +1,3 @@
-// TODO: Error handling for edge cases (don't divide by zero, etc)
-// TODO: Fix callback on no answer
 const express = require("express");
 const router = express.Router();
 const url = require("url");
@@ -25,8 +23,11 @@ router.post("/call", async (req, res) => {
   const timeBeforeAlarm = query.timeBeforeAlarm;
   const phoneNumber = query.phoneNumber;
   const smsNumbers = query.smsNumbers;
-
+  console.log(speed, timeBeforeAlarm, phoneNumber, smsNumbers);
+  // Ensure number starts with +
   const numberToCall = "+" + phoneNumber.substring(1);
+
+  // Split numbers to notify to array
   let smsNumbersArray;
   if (smsNumbers) {
     smsNumbersArray = smsNumbers.split(",");
@@ -36,6 +37,7 @@ router.post("/call", async (req, res) => {
   let response;
   let queryFrequency;
 
+  //
   try {
     // * Get destination location to print in text message
     const params = {
@@ -56,30 +58,28 @@ router.post("/call", async (req, res) => {
     const d = calculateDistance(origin, destination);
 
     // Error handling: Ensure that speed is not 0
-    if (Math.abs(speed) < 2)
+    if (speed === 0)
       return res.send(JSON.stringify(minimumTimeBeforeNextQuery));
+
     // Calculate the time to destination based on instantaneous
     const straightLineDurationToDestination = d / Math.abs(speed);
 
     // Call user if time to location is less than set time
     if (straightLineDurationToDestination <= timeBeforeAlarm) {
-      const count = 0;
       console.log("RING RING BITCHES");
+
       const client = require("twilio")(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
       client.calls
         .create({
           twiml: "<Response><Say>Ahoy there!</Say></Response>",
           to: numberToCall,
           from: TWILIO_NUMBER,
-          statusCallback: `https://ichack-22.herokuapp.com/no-answer?number=${numberToCall}&count=${count}`,
-          statusCallbackEvent: ["completed"],
-          statusCallbackMethod: "POST",
         })
         .then((call) => console.log(call.status));
 
       if (smsNumbersArray.length > 0) {
         console.log("MESSAGE MESSAGE BABY");
-
+        //
         smsNumbersArray.forEach((number) => {
           number = "+" + number.substring(1);
           console.log(number);
@@ -98,6 +98,7 @@ router.post("/call", async (req, res) => {
       queryFrequency = 0;
     } else {
       queryFrequency = returnTimeToQueryNext(straightLineDurationToDestination);
+
       console.log("Time to destination: ", straightLineDurationToDestination);
       console.log("Time to next query: ", queryFrequency);
     }
@@ -106,41 +107,6 @@ router.post("/call", async (req, res) => {
     return res.sendStatus(404);
   }
   return res.send(JSON.stringify(queryFrequency));
-});
-
-router.post("/no-answer", async (req, res) => {
-  const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-  const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-  const TWILIO_NUMBER = process.env.TWILIO_NUMBER;
-
-  const query = url.parse(req.url, true).query;
-  const count = parseInt(query.count) + 1;
-  const num = query.number;
-  console.log(query);
-  console.log(req);
-
-  try {
-    if (count < 3) {
-      console.log("RING RING BITCHES AGAIN");
-      const client = require("twilio")(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-      client.calls
-        .create({
-          twiml: "<Response><Say>Ahoy there!</Say></Response>",
-          to: num,
-          from: TWILIO_NUMBER,
-          statusCallback: `https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
-          statusCallbackEvent: ["completed"],
-          statusCallbackMethod: "POST",
-        })
-        .then((call) => console.log(call.status));
-    }
-    statusCode = 200;
-  } catch (error) {
-    console.log(error);
-    statusCode = 404;
-  }
-
-  return res.sendStatus(statusCode);
 });
 
 module.exports = router;
