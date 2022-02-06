@@ -27,16 +27,15 @@ router.post("/call", async (req, res) => {
   // const sendMessageToSafety = query.sendMessageToSafety;
   // const safetyPhoneNumber = query.safetyPhoneNumber;
 
+  let statusCode = 0;
+
+  // return timeLeft, ifCalled
   const originArray = origin.split(",");
   const destinationArray = destination.split(",");
   const originLat = originArray[0];
   const originLong = originArray[1];
   const destinationLat = destinationArray[0];
   const destinationLong = destinationArray[1];
-
-  let statusCode = 0;
-
-  // return timeLeft, ifCalled
 
   const params = {
     origin: origin,
@@ -65,7 +64,7 @@ router.post("/call", async (req, res) => {
     const d = R * c; // in metres
 
     // Calculate the time to destination based on instantaneous
-    const straightLineDurationToDestination = d / abs(speed);
+    const straightLineDurationToDestination = d / Math.abs(speed);
 
     // Call user if time to location is less than set time
     if (straightLineDurationToDestination <= timeBeforeAlarm) {
