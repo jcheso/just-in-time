@@ -1,3 +1,8 @@
+// TODO: Take an array of numbers and send messages to them on arrival (1 friend or multiple pending UI requirements)
+// TODO: Add response to stop querying the backend
+// TODO: Add response to tell app how often to query
+// TODO: Error handling for edge cases (don't divide by zero, etc)
+// TODO: Fix callback on no answer
 const express = require("express");
 const router = express.Router();
 const url = require("url");
@@ -14,63 +19,36 @@ router.post("/call", async (req, res) => {
   const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
   const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
   const TWILIO_NUMBER = process.env.TWILIO_NUMBER;
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
   // Parse query for variables
   const query = url.parse(req.url, true).query;
   const origin = query.origin;
   const destination = query.destination;
   const speed = query.speed;
-  const deviceTime = query.deviceTime;
   const timeBeforeAlarm = query.timeBeforeAlarm;
-  const numberToCall = query.phoneNumber;
-  // const sendMessageToSafety = query.sendMessageToSafety;
-  // const safetyPhoneNumber = query.safetyPhoneNumber;
+  const phoneNumber = query.phoneNumber;
+  const numberToCall = "+" + phoneNumber.substring(1);
 
+  // const safetyPhoneNumber = query.safetyPhoneNumber;
   let statusCode = 0;
 
-  // return timeLeft, ifCalled
-  const originArray = origin.split(",");
-  const destinationArray = destination.split(",");
-  const originLat = originArray[0];
-  const originLong = originArray[1];
-  const destinationLat = destinationArray[0];
-  const destinationLong = destinationArray[1];
-
-  const params = {
-    origin: origin,
-    destination: destination,
-    key: GOOGLE_API_KEY,
-  };
-
-  let response = {};
-
   try {
-    response = await axios.get(
-      "https://maps.googleapis.com/maps/api/directions/json?",
-      { params }
-    );
-
     // Determine the straight-line distance between start and end
-    const R = 6371e3; // Earth Radius metres
-    const φ1 = (originLat * Math.PI) / 180; // φ, λ in radians
-    const φ2 = (destinationLat * Math.PI) / 180;
-    const Δφ = ((destinationLat - originLat) * Math.PI) / 180;
-    const Δλ = ((destinationLong - originLong) * Math.PI) / 180;
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // in metres
+    const d = calculateDistance(origin, destination);
+
     // Calculate the time to destination based on instantaneous
     const straightLineDurationToDestination = d / Math.abs(speed);
+    console.log("Number to call from query: ", numberToCall);
+
+    console.log(
+      `https://ichack-22.herokuapp.com/no-answer?number=${numberToCall}`
+    );
 
     // Call user if time to location is less than set time
     if (straightLineDurationToDestination <= timeBeforeAlarm) {
       let sendMessageToSafety = true;
       const safetyPhoneNumber = "+447883097795";
       const count = 0;
-
       console.log("RING RING BITCHES");
       const client = require("twilio")(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
       client.calls
@@ -95,8 +73,14 @@ router.post("/call", async (req, res) => {
           })
           .then((message) => console.log(message.sid));
       }
+    } else {
+      console.log("I got here");
+      timeToQueryNext = returnTimeToQueryNext(
+        straightLineDurationToDestination
+      );
+      console.log(timeToQueryNext);
     }
-    statusCode = 200;
+    statusCode = 201;
   } catch (error) {
     console.log(error);
     statusCode = 404;
@@ -108,12 +92,11 @@ router.post("/no-answer", async (req, res) => {
   const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
   const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
   const TWILIO_NUMBER = process.env.TWILIO_NUMBER;
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
   const query = url.parse(req.url, true).query;
   const count = parseInt(query.count) + 1;
   const num = query.number;
-
+  console.log(JSON.stringify(req));
   console.log("NO ANSWER");
   console.log("COUNT: " + count);
 
@@ -142,3 +125,41 @@ router.post("/no-answer", async (req, res) => {
 });
 
 module.exports = router;
+
+/* FUNCTIONS */
+
+// Function that receives input of two latlong coordinates, and returns distance
+function calculateDistance(origin, destination) {
+  // Split origin and destination into latitude and longitude coordinates
+  const originArray = origin.split(",");
+  const destinationArray = destination.split(",");
+  const originLat = originArray[0];
+  const originLong = originArray[1];
+  const destinationLat = destinationArray[0];
+  const destinationLong = destinationArray[1];
+
+  // Determine the straight-line distance between start and end
+  const R = 6371e3; // Earth Radius metres
+  const φ1 = (originLat * Math.PI) / 180; // φ, λ in radians
+  const φ2 = (destinationLat * Math.PI) / 180;
+  const Δφ = ((destinationLat - originLat) * Math.PI) / 180;
+  const Δλ = ((destinationLong - originLong) * Math.PI) / 180;
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // in metres
+
+  return d;
+}
+
+// Function that receives input of duration from destination,
+// and returns time to query next according to algorithm
+function returnTimeToQueryNext(straightLineDurationToDestination) {
+  const maximumTimeBeforeNextQuery = 30 * 60;
+  const minimumTimeBeforeNextQuery = 60;
+  ````````````````````````````````````;
+  const timeToQueryNext =
+    maximumTimeBeforeNextQuery - straightLineDurationToDestination ** 2;
+  return Math.max(timeToQueryNext, minimumTimeBeforeNextQuery);
+}
