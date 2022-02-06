@@ -65,7 +65,7 @@ router.post("/call", async (req, res) => {
     const d = R * c; // in metres
 
     // Calculate the time to destination based on instantaneous
-    const straightLineDurationToDestination = d / speed;
+    const straightLineDurationToDestination = d / abs(speed);
 
     // Call user if time to location is less than set time
     if (straightLineDurationToDestination <= timeBeforeAlarm) {
