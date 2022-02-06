@@ -1,13 +1,9 @@
-// TODO: Take an array of numbers and send messages to them on arrival (1 friend or multiple pending UI requirements)
-// TODO: Add response to stop querying the backend
-// TODO: Add response to tell app how often to query
 // TODO: Error handling for edge cases (don't divide by zero, etc)
 // TODO: Fix callback on no answer
 const express = require("express");
 const router = express.Router();
 const url = require("url");
 const axios = require("axios");
-
 require("dotenv").config();
 
 router.get("/ping", async (req, res) => {
@@ -19,6 +15,7 @@ router.post("/call", async (req, res) => {
   const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
   const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
   const TWILIO_NUMBER = process.env.TWILIO_NUMBER;
+  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
   // Parse query for variables
   const query = url.parse(req.url, true).query;
@@ -27,27 +24,45 @@ router.post("/call", async (req, res) => {
   const speed = query.speed;
   const timeBeforeAlarm = query.timeBeforeAlarm;
   const phoneNumber = query.phoneNumber;
-  const numberToCall = "+" + phoneNumber.substring(1);
+  const smsNumbers = query.smsNumbers;
 
-  // const safetyPhoneNumber = query.safetyPhoneNumber;
-  let statusCode = 0;
+  const numberToCall = "+" + phoneNumber.substring(1);
+  let smsNumbersArray;
+  if (smsNumbers) {
+    smsNumbersArray = smsNumbers.split(",");
+  }
+
+  // Define variables
+  let response;
+  let queryFrequency;
 
   try {
+    // * Get destination location to print in text message
+    const params = {
+      latlng: destination,
+      key: GOOGLE_API_KEY,
+    };
+    response = await axios.get(
+      "https://maps.googleapis.com/maps/api/geocode/json?",
+      { params }
+    );
+
+    let destinationName;
+    response.data
+      ? (destinationName = response.data.results[0].formatted_address)
+      : (destinationName = "their destination");
+
     // Determine the straight-line distance between start and end
     const d = calculateDistance(origin, destination);
 
+    // Error handling: Ensure that speed is not 0
+    if (Math.abs(speed) < 2)
+      return res.send(JSON.stringify(minimumTimeBeforeNextQuery));
     // Calculate the time to destination based on instantaneous
     const straightLineDurationToDestination = d / Math.abs(speed);
-    console.log("Number to call from query: ", numberToCall);
-
-    console.log(
-      `https://ichack-22.herokuapp.com/no-answer?number=${numberToCall}`
-    );
 
     // Call user if time to location is less than set time
     if (straightLineDurationToDestination <= timeBeforeAlarm) {
-      let sendMessageToSafety = true;
-      const safetyPhoneNumber = "+447883097795";
       const count = 0;
       console.log("RING RING BITCHES");
       const client = require("twilio")(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
@@ -62,30 +77,35 @@ router.post("/call", async (req, res) => {
         })
         .then((call) => console.log(call.status));
 
-      if (sendMessageToSafety) {
+      if (smsNumbersArray.length > 0) {
         console.log("MESSAGE MESSAGE BABY");
-        client.messages
-          .create({
-            from: TWILIO_NUMBER,
-            body: "Your friend has arrived at their destination!",
-            to: safetyPhoneNumber,
-            messagingServiceSid: "MG61ffe7bda5574fa4bf36ddc2614e6501",
-          })
-          .then((message) => console.log(message.sid));
+
+        smsNumbersArray.forEach((number) => {
+          number = "+" + number.substring(1);
+          console.log(number);
+          client.messages
+            .create({
+              from: TWILIO_NUMBER,
+              body: `Your friend will arrive at ${destinationName} in ${Math.floor(
+                straightLineDurationToDestination / 60
+              )} minutes.`,
+              to: number,
+              messagingServiceSid: "MG61ffe7bda5574fa4bf36ddc2614e6501",
+            })
+            .then((message) => console.log(message.sid));
+        });
       }
+      queryFrequency = 0;
     } else {
-      console.log("I got here");
-      timeToQueryNext = returnTimeToQueryNext(
-        straightLineDurationToDestination
-      );
-      console.log(timeToQueryNext);
+      queryFrequency = returnTimeToQueryNext(straightLineDurationToDestination);
+      console.log("Time to destination: ", straightLineDurationToDestination);
+      console.log("Time to next query: ", queryFrequency);
     }
-    statusCode = 201;
   } catch (error) {
     console.log(error);
-    statusCode = 404;
+    return res.sendStatus(404);
   }
-  return res.sendStatus(statusCode);
+  return res.send(JSON.stringify(queryFrequency));
 });
 
 router.post("/no-answer", async (req, res) => {
@@ -96,9 +116,8 @@ router.post("/no-answer", async (req, res) => {
   const query = url.parse(req.url, true).query;
   const count = parseInt(query.count) + 1;
   const num = query.number;
-  console.log(JSON.stringify(req.body));
-  console.log("NO ANSWER");
-  console.log("COUNT: " + count);
+  console.log(query);
+  console.log(req);
 
   try {
     if (count < 3) {
@@ -107,7 +126,7 @@ router.post("/no-answer", async (req, res) => {
       client.calls
         .create({
           twiml: "<Response><Say>Ahoy there!</Say></Response>",
-          to: "+447801824101",
+          to: num,
           from: TWILIO_NUMBER,
           statusCallback: `https://ichack-22.herokuapp.com/no-answer?number=${num}&count=${count}`,
           statusCallbackEvent: ["completed"],
@@ -156,10 +175,10 @@ function calculateDistance(origin, destination) {
 // Function that receives input of duration from destination,
 // and returns time to query next according to algorithm
 function returnTimeToQueryNext(straightLineDurationToDestination) {
-  const maximumTimeBeforeNextQuery = 30 * 60;
-  const minimumTimeBeforeNextQuery = 60;
-  ````````````````````````````````````;
+  const minimumTimeBeforeNextQuery = 30;
   const timeToQueryNext =
-    maximumTimeBeforeNextQuery - straightLineDurationToDestination ** 2;
+    0.0024 * (straightLineDurationToDestination / 60) ** 2 +
+    4.8338 * (straightLineDurationToDestination / 60) -
+    56;
   return Math.max(timeToQueryNext, minimumTimeBeforeNextQuery);
 }
