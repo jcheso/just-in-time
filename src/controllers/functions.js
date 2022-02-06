@@ -1,5 +1,9 @@
 // Function that receives input of two latlong coordinates, and returns distance
+<<<<<<< HEAD
 export function calculateDistance(origin, destination) {
+=======
+function calculateDistance(origin, destination) {
+>>>>>>> 43bff21245588ede3513d7b59bd934165188e61b
   // Split origin and destination into latitude and longitude coordinates
   const originArray = origin.split(",");
   const destinationArray = destination.split(",");

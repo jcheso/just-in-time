@@ -62,7 +62,6 @@ router.post("/call", async (req, res) => {
       Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c; // in metres
-
     // Calculate the time to destination based on instantaneous
     const straightLineDurationToDestination = d / Math.abs(speed);
 
