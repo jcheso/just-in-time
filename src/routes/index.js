@@ -28,7 +28,7 @@ router.post("/call", async (req, res) => {
   const numberToCall = "+" + phoneNumber.substring(1);
 
   // Split numbers to notify to array
-  let smsNumbersArray;
+  let smsNumbersArray = [];
   if (smsNumbers) {
     smsNumbersArray = smsNumbers.split(",");
   }
@@ -77,7 +77,7 @@ router.post("/call", async (req, res) => {
         })
         .then((call) => console.log(call.status));
 
-      if (smsNumbersArray.length > 0) {
+      if (smsNumbersArray) {
         console.log("MESSAGE MESSAGE BABY");
         //
         smsNumbersArray.forEach((number) => {
