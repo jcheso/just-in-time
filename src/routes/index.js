@@ -96,7 +96,7 @@ router.post("/no-answer", async (req, res) => {
   const query = url.parse(req.url, true).query;
   const count = parseInt(query.count) + 1;
   const num = query.number;
-  console.log(JSON.stringify(req));
+  console.log(JSON.stringify(req.data));
   console.log("NO ANSWER");
   console.log("COUNT: " + count);
 
